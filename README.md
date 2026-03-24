@@ -50,7 +50,9 @@ Below are the required software programs and instructions for installing and usi
 
 11. Access the user interface in a browser by visiting: `http://localhost:8000`
 
-12. To exit the virtual environment (venv), type this command in the terminal: `deactivate`
+12. After opening the UI, press either the `Fetch` or `Browse` buttons to load and visualize your data
+
+13. To exit the virtual environment, type this command in the terminal: `deactivate`
 
 ## Other Considerations
 
