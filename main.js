@@ -35,7 +35,11 @@
     const f = e.target.files?.[0];
     if (f) {
       const text = await f.text();
-      loadData(JSON.parse(text));
+      try {
+        loadData(JSON.parse(text));
+      } catch (e) {
+        alert("Invalid JSON file.");
+      }
     }
   });
   const dz = document.getElementById("dropzone");
@@ -52,7 +56,11 @@
     const f = e.dataTransfer.files?.[0];
     if (f) {
       const text = await f.text();
-      loadData(JSON.parse(text));
+      try {
+        loadData(JSON.parse(text));
+      } catch (e) {
+        alert("Invalid JSON file.");
+      }
     }
   });
 
@@ -170,8 +178,8 @@
     const svg = box.append("svg").attr("width", w).attr("height", h);
     const data = [
       { k: "Full", v: rt?.fullband_s ?? null, c: "#8ab4ff" },
-      { k: "500Hz", v: rt?.five_hundred_hz_s ?? null, c: "#7ee787" },
-      { k: "1kHz", v: rt?.one_khz_s ?? null, c: "#ffcc66" },
+      { k: "500Hz", v: rt?.["500hz_s"] ?? null, c: "#7ee787" },
+      { k: "1kHz", v: rt?.["1khz_s"] ?? null, c: "#ffcc66" },
     ].filter((d) => d.v != null);
     const x = d3
       .scaleBand()
@@ -431,7 +439,7 @@
       .data(entries)
       .join("div")
       .attr("class", "meta")
-      .html((d) => `<strong>${d.k}</strong>${d.v ?? "—"}`);
+      .html((d) => `<strong>${d.k}:</strong> ${d.v ?? "—"}`);
   }
 
   function drawTemporal(sel, t) {
@@ -454,7 +462,7 @@
       .data(entries)
       .join("div")
       .attr("class", "meta")
-      .html((d) => `<strong>${d.k}</strong>${d.v}`);
+      .html((d) => `<strong>${d.k}:</strong> ${d.v}`);
   }
 
   function renderMatches(matches) {
@@ -536,7 +544,11 @@
 
     svg.call(zoom).on("dblclick.zoom", null);
 
-    const linkScale = d3.scaleLinear().domain([0.6, 1.0]).range([1, 6]);
+    const linkScale = d3
+      .scaleLinear()
+      .domain([0.6, 1.0])
+      .range([1, 6])
+      .clamp(true);
     const color = d3.scaleLinear().domain([0, 1]).range(["#c3d1ff", "#8ab4ff"]);
 
     const sim = d3
