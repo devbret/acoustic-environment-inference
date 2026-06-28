@@ -24,6 +24,8 @@ Below are the required software programs and instructions for installing and usi
 
 - [Python](https://www.python.org/downloads/)
 
+- [FFmpeg](https://ffmpeg.org/download.html)
+
 ### Steps For Use
 
 1. Install the above programs

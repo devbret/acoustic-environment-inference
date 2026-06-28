@@ -70,14 +70,14 @@
         pipeline_version: "unknown",
         results: json,
         matches: [],
-        match_config: { threshold: 0.6 },
+        match_config: { threshold: 0.43 },
       };
     } else {
       DATA = {
         pipeline_version: json.pipeline_version ?? "unknown",
         results: json.results ?? [],
         matches: json.matches ?? [],
-        match_config: json.match_config ?? { threshold: 0.6 },
+        match_config: json.match_config ?? { threshold: 0.43 },
       };
     }
     metaPanel.classList.remove("hidden");
@@ -478,6 +478,7 @@
         tr.append("td").text(m.b_basename || m.b_file);
         tr.append("td").text(m.components?.fingerprint_sim?.toFixed(2));
         tr.append("td").text(m.components?.bands_cosine_sim?.toFixed(2));
+        tr.append("td").text(m.components?.ltas_cosine_sim?.toFixed(2));
         tr.append("td").text(m.components?.rt60_sim?.toFixed(2));
         tr.append("td").text(m.components?.hum_sim?.toFixed(2));
         tr.append("td").html(
@@ -489,9 +490,6 @@
   let _networkAPI = null;
 
   function renderNetwork(matches, results) {
-    const idMap = new Map();
-    results.forEach((r, i) => idMap.set(r.file || r.basename || String(i), i));
-
     const nodes = results.map((r, i) => ({
       id: i,
       name: r.basename || r.file || `Item ${i + 1}`,
@@ -524,15 +522,6 @@
       h = box.node().clientHeight;
 
     const svg = box.append("svg").attr("width", w).attr("height", h);
-    const bg = svg
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", w)
-      .attr("height", h)
-      .attr("fill", "#0f1220")
-      .attr("opacity", 0);
-
     const g = svg.append("g").attr("class", "zoom-layer");
 
     const zoom = d3
@@ -544,9 +533,10 @@
 
     svg.call(zoom).on("dblclick.zoom", null);
 
+    const threshold = DATA?.match_config?.threshold ?? 0.43;
     const linkScale = d3
       .scaleLinear()
-      .domain([0.6, 1.0])
+      .domain([threshold, 1.0])
       .range([1, 6])
       .clamp(true);
     const color = d3.scaleLinear().domain([0, 1]).range(["#c3d1ff", "#8ab4ff"]);
