@@ -8,7 +8,6 @@ import time
 import itertools
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-
 import numpy as np
 import librosa as lr
 from scipy.signal import welch, find_peaks
@@ -26,10 +25,11 @@ NOISE_FP_MAX_PEAKS = 8
 NOISE_FP_MAX_FREQ_HZ = 2000
 BAND_COSINE_EPS = 1e-9
 RT60_MATCH_TAU = 0.20
+CENTROID_CV_HIGH = 0.35
 MATCH_WEIGHTS = {"fingerprint": 0.40, "bands": 0.15, "ltas": 0.20, "rt60": 0.15, "hum": 0.10}
 MATCH_MIN_SCORE = 0.43
 MATCH_TOP_K = 50
-PIPELINE_VERSION = "2.0.0-osint-upgrade"
+PIPELINE_VERSION = "2.0.1-osint-upgrade"
 AUDIO_EXTS = {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aiff", ".aif", ".opus"}
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm"}
 
@@ -263,17 +263,36 @@ def transient_stats(y, sr):
 def temporal_clues(y, sr, bands):
     S = np.abs(lr.stft(y, n_fft=1024, hop_length=256)) + 1e-12
     cent = lr.feature.spectral_centroid(S=S, sr=sr).flatten()
+
+    if cent.size < 2:
+        return {
+            "time_of_day_hint": "unknown",
+            "confidence": 0.2,
+            "centroid_variance": 0.0,
+            "centroid_mean_hz": float(cent[0]) if cent.size else 0.0,
+            "centroid_cv": 0.0,
+        }
+
     cent_var = float(np.var(cent))
+    cent_mean = float(cent.mean())
+    cent_cv = float(np.sqrt(cent_var) / max(cent_mean, 1e-9))
+
     lf = bands.get("120_250", -80) + bands.get("250_500", -80)
     hf = bands.get("2000_4000", -80) + bands.get("4000_8000", -80)
     hint, conf = "unknown", 0.3
-    if cent_var > 1e9 and (hf - lf) > 6:
+    if cent_cv > CENTROID_CV_HIGH and (hf - lf) > 6:
         hint, conf = "daytime_birds_wind_likely", 0.55
     elif lf > -50 and (lf - hf) > 4:
         hint, conf = "traffic_heavy_possible_rush_hour", 0.5
     elif hf < -60 and lf < -60:
         hint, conf = "night_quiet_possible", 0.45
-    return {"time_of_day_hint": hint, "confidence": conf, "centroid_variance": cent_var}
+    return {
+        "time_of_day_hint": hint,
+        "confidence": conf,
+        "centroid_variance": cent_var,
+        "centroid_mean_hz": cent_mean,
+        "centroid_cv": cent_cv,
+    }
 
 
 def file_provenance(path):
