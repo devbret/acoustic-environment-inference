@@ -2,3 +2,4 @@
 venv/
 input/*.wav
 output/*.json
+__pycache__/
